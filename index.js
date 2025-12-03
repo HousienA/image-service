@@ -97,10 +97,9 @@ app.get('/images/blob/:id', async (req, res) => {
     }
 });
 
-// 3. Hämta metadata (för redigeraren)
+// 3. Hämta metadata
 app.get('/images/:id', async (req, res) => {
     try {
-        // Hämta INTE image_data här (för tungt)
         const [rows] = await pool.query(
             'SELECT id, encounter_id, annotations, texts, description FROM images WHERE id = ?',
             [req.params.id]
@@ -115,7 +114,11 @@ app.get('/images/:id', async (req, res) => {
             id: img.id,
             encounterId: img.encounter_id,
             url: `${publicUrl}/images/blob/${img.id}`,
-            annotations: img.annotations ? JSON.parse(img.annotations) : "",
+
+            // FIX: Skicka annotations som en sträng, inte objekt
+            annotations: img.annotations || "",
+
+            // Texts är en array, så den ska parsas
             texts: img.texts ? JSON.parse(img.texts) : [],
             description: img.description
         });
@@ -124,6 +127,7 @@ app.get('/images/:id', async (req, res) => {
         res.status(500).json({ error: 'Kunde inte hämta bildinfo' });
     }
 });
+
 
 // 4. Spara annoteringar
 app.put('/images/:id/annotate', async (req, res) => {
